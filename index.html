@@ -9,13 +9,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-:root { --sidebar-width:280px; }
-body { background:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
-#sidebar { width:var(--sidebar-width); position:fixed; height:100vh; background:#2c3e50; color:white; padding:20px; z-index:1000; }
-#main-content { margin-left:var(--sidebar-width); padding:30px; }
-.card { border:none; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-.loading-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:2000; }
-.text-amount { font-family:monospace; font-weight:bold; font-size:1.1em; }
+:root { --sidebar-width: 280px; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; }
+#sidebar { width: var(--sidebar-width); position: fixed; height: 100vh; background: #2c3e50; color: white; padding: 20px; z-index: 1000; }
+#main-content { margin-left: var(--sidebar-width); padding: 30px; }
+.card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:2000; }
+.text-amount { font-family: monospace; font-weight: bold; font-size: 1.1em; }
 </style>
 </head>
 <body>
@@ -48,7 +48,6 @@ body { background:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-ser
 </div>
 
 <hr>
-
 <button class="btn btn-primary w-100 mb-2" onclick="loadData()">🔄 Reload</button>
 <button class="btn btn-danger w-100" onclick="exportPDF()">📄 Export PDF</button>
 </div>
@@ -59,22 +58,24 @@ body { background:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-ser
 
 <div class="row mb-4">
 <div class="col-md-4">
-  <div class="card p-4 text-center bg-primary text-white">
-    <h6>ยอดทั้งหมด</h6>
-    <h2 id="countTotal">0</h2>
-  </div>
+<div class="card p-4 text-center bg-primary text-white">
+<h6>ยอดทั้งหมด</h6>
+<h2 id="countTotal">0</h2>
 </div>
-<div class="col-md-4">
-  <div class="card p-4 text-center bg-success text-white">
-    <h6>ชำระแล้ว</h6>
-    <h2 id="countPaid">0</h2>
-  </div>
 </div>
+
 <div class="col-md-4">
-  <div class="card p-4 text-center bg-warning">
-    <h6>ค้างชำระ</h6>
-    <h2 id="countPending">0</h2>
-  </div>
+<div class="card p-4 text-center bg-success text-white">
+<h6>ชำระแล้ว</h6>
+<h2 id="countPaid">0</h2>
+</div>
+</div>
+
+<div class="col-md-4">
+<div class="card p-4 text-center bg-warning">
+<h6>ค้างชำระ</h6>
+<h2 id="countPending">0</h2>
+</div>
 </div>
 </div>
 
@@ -83,63 +84,63 @@ body { background:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-ser
 <table class="table table-hover">
 <thead class="table-light">
 <tr>
-  <th>Invoice</th>
-  <th>ลูกค้า</th>
-  <th>วันที่</th>
-  <th class="text-end">ยอดรวม</th>
-  <th class="text-center">สถานะ</th>
+<th>Invoice</th>
+<th>ลูกค้า</th>
+<th>วันที่</th>
+<th class="text-end">ยอดรวม</th>
+<th class="text-center">สถานะ</th>
 </tr>
 </thead>
 <tbody id="tableBody"></tbody>
 </table>
 </div>
 </div>
+
 </div>
 </div>
 
 <script>
-const API_URL="https://script.google.com/macros/s/AKfycbxgOpoOk3UsOUcOTWJLUar2rLSSFURc0WOMN1oq5gI0PSzVuA26Bzj9KVPm7OSj7tJ4/exec";
-let rawData=[];
+// URL Web App ล่าสุด
+const API_URL = "https://script.google.com/macros/s/AKfycbxgOpoOk3UsOUcOTWJLUar2rLSSFURc0WOMN1oq5gI0PSzVuA26Bzj9KVPm7OSj7tJ4/exec";
 
-async function loadData(){
-  document.getElementById("loader").style.display="flex";
+let rawData = [];
+
+async function loadData() {
+  document.getElementById("loader").style.display = "flex";
   try {
     const res = await fetch(API_URL);
     const data = await res.json();
-    rawData = data.filter(r=>r["ชื่อลูกค้า"]);
+
+    // กรองแถวที่มีลูกค้าเท่านั้น
+    rawData = data.filter(r => r["ชื่อลูกค้า"]);
+
     setupFilters();
     processData();
   } catch(err) {
-    alert("โหลดข้อมูลไม่สำเร็จ "+err);
-  } finally {
-    document.getElementById("loader").style.display="none";
+    alert("โหลดข้อมูลไม่สำเร็จ: " + err);
   }
+  document.getElementById("loader").style.display = "none";
 }
 
-function setupFilters(){
-  const names=[...new Set(rawData.map(r=>r["ชื่อลูกค้า"]))].sort();
-  const months=[...new Set(rawData.map(r=>r["เดือน"]))].sort();
-  
-  let nameHTML='<option value="">ทั้งหมด</option>';
-  names.forEach(n=>nameHTML+=`<option>${n}</option>`);
-  document.getElementById("nameFilter").innerHTML=nameHTML;
+function setupFilters() {
+  const names = [...new Set(rawData.map(r => r["ชื่อลูกค้า"]))].sort();
+  const months = [...new Set(rawData.map(r => r["เดือน"]))].sort();
 
-  let monthHTML='<option value="">ทั้งหมด</option>';
-  months.forEach(m=>monthHTML+=`<option>${m}</option>`);
-  document.getElementById("monthFilter").innerHTML=monthHTML;
+  document.getElementById("nameFilter").innerHTML = '<option value="">ทั้งหมด</option>' + names.map(n => `<option>${n}</option>`).join('');
+  document.getElementById("monthFilter").innerHTML = '<option value="">ทั้งหมด</option>' + months.map(m => `<option>${m}</option>`).join('');
 }
 
-function processData(){
-  const name=document.getElementById("nameFilter").value;
-  const status=document.getElementById("statusFilter").value;
-  const month=document.getElementById("monthFilter").value;
+function processData() {
+  const name = document.getElementById("nameFilter").value;
+  const status = document.getElementById("statusFilter").value;
+  const month = document.getElementById("monthFilter").value;
 
-  const filtered = rawData.filter(r=>{
-    const matchName = !name || r["ชื่อลูกค้า"]===name;
-    const matchMonth = !month || r["เดือน"]===month;
+  const filtered = rawData.filter(r => {
+    const matchName = !name || r["ชื่อลูกค้า"] === name;
+    const matchMonth = !month || r["เดือน"] === month;
     let matchStatus = true;
-    if(status==="Y") matchStatus=r["สถานะ"]==="Y";
-    if(status==="N") matchStatus=r["สถานะ"]!=="Y";
+    if(status==="Y") matchStatus = r["สถานะ"]==="Y";
+    if(status==="N") matchStatus = r["สถานะ"]!=="Y";
     return matchName && matchMonth && matchStatus;
   });
 
@@ -147,14 +148,16 @@ function processData(){
   updateSummary(filtered);
 }
 
-function parseNum(v){ return parseFloat(String(v).replace(/,/g,""))||0; }
+function parseNum(v) {
+  return parseFloat(String(v).replace(/,/g,""))||0;
+}
 
-function renderTable(data){
-  let html="";
-  data.forEach(r=>{
-    const total=parseNum(r["รวมทั้งสิ้น"]);
-    const paid=r["สถานะ"]==="Y";
-    html+=`<tr>
+function renderTable(data) {
+  let html = "";
+  data.forEach(r => {
+    const total = parseNum(r["รวมทั้งสิ้น"]);
+    const paid = r["สถานะ"]==="Y";
+    html += `<tr>
       <td>${r["INVOICE"]||"-"}</td>
       <td>${r["ชื่อลูกค้า"]||"-"}</td>
       <td>${r["วันที่"]||"-"}</td>
@@ -165,24 +168,25 @@ function renderTable(data){
   document.getElementById("tableBody").innerHTML = html || '<tr><td colspan="5" class="text-center text-muted">ไม่พบข้อมูล</td></tr>';
 }
 
-function updateSummary(data){
+function updateSummary(data) {
   const total = data.reduce((s,r)=>s+parseNum(r["รวมทั้งสิ้น"]),0);
   const paid = data.filter(r=>r["สถานะ"]==="Y").reduce((s,r)=>s+parseNum(r["รวมทั้งสิ้น"]),0);
   const pending = total - paid;
-  document.getElementById("countTotal").innerText = total.toLocaleString(undefined,{minimumFractionDigits:2});
-  document.getElementById("countPaid").innerText = paid.toLocaleString(undefined,{minimumFractionDigits:2});
-  document.getElementById("countPending").innerText = pending.toLocaleString(undefined,{minimumFractionDigits:2});
+
+  document.getElementById("countTotal").innerText = total.toLocaleString();
+  document.getElementById("countPaid").innerText = paid.toLocaleString();
+  document.getElementById("countPending").innerText = pending.toLocaleString();
 }
 
-function exportPDF(){
+function exportPDF() {
   html2pdf().from(document.getElementById("report-area")).set({
     margin:10,
     filename:"invoice-report.pdf",
-    jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}
+    jsPDF:{unit:"mm", format:"a4", orientation:"landscape"}
   }).save();
 }
 
-window.onload=loadData;
+window.onload = loadData;
 </script>
 
 </body>
