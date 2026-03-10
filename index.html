@@ -1,37 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Login</title>
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+  <h2>Login with Google</h2>
 
-<div id="g_id_onload"
-     data-client_id="712773778304-74h46bfrpsbkrsrbmv5lufdj53isu4o0.apps.googleusercontent.com"
-     data-callback="handleCredentialResponse">
-</div>
-<div class="g_id_signin"></div>
+  <!-- Google Login button -->
+  <div id="g_id_onload"
+       data-client_id="712773778304-74h46bfrpsbkrsrbmv5lufdj53isu4o0.apps.googleusercontent.com"
+       data-callback="handleCredentialResponse">
+  </div>
+  <div class="g_id_signin"></div>
 
-<script>
-function handleCredentialResponse(response) {
-    const jwt = response.credential;
-    const payload = JSON.parse(atob(jwt.split('.')[1]));
-    const userEmail = payload.email;
+  <script>
+    // Callback function after successful Google login
+    function handleCredentialResponse(response) {
+        try {
+            // Decode JWT credential
+            const jwt = response.credential;
+            const payload = JSON.parse(atob(jwt.split('.')[1]));
+            const userEmail = payload.email;
 
-    fetch('https://script.google.com/macros/s/AKfycbxHMiSJBUM_3wdnjrNqBW-mxee6cr3J4J7QiOtlqQ7UOMsRnkK1EUw-Lc3IX5Al5Et2mg/exec')
-      .then(res => res.json())
-      .then(data => {
-          const allowed = data.includes(userEmail);
-          if(allowed){
-              alert('Login Success');
-              window.location.href = 'dashboard.html';
-          } else {
-              alert('Access Denied');
-          }
-      })
-      .catch(err => console.error(err));
-}
-</script>
+            console.log("User email:", userEmail);
+
+            // Call Google Apps Script to check allowed emails
+            fetch('https://script.google.com/macros/s/AKfycbxHMiSJBUM_3wdnjrNqBW-mxee6cr3J4J7QiOtlqQ7UOMsRnkK1EUw-Lc3IX5Al5Et2mg/exec')
+              .then(res => res.json())
+              .then(data => {
+                  const allowed = data.includes(userEmail);
+                  if(allowed){
+                      // Redirect immediately to dashboard
+                      window.location.replace('dashboard.html');
+                  } else {
+                      alert('Access Denied: You are not allowed to login.');
+                  }
+              })
+              .catch(err => {
+                  console.error("Error fetching allowed emails:", err);
+                  alert('Error checking login. Please try again.');
+              });
+        } catch (e) {
+            console.error("Error decoding JWT:", e);
+        }
+    }
+  </script>
 
 </body>
 </html>
