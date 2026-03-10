@@ -111,13 +111,14 @@ async function loadData() {
     const res = await fetch(API_URL);
     const data = await res.json();
 
-    // กรองแถวที่มีลูกค้าเท่านั้น
+    // ใช้ array ของ object โดยตรง
     rawData = data.filter(r => r["ชื่อลูกค้า"]);
 
     setupFilters();
     processData();
   } catch(err) {
     alert("โหลดข้อมูลไม่สำเร็จ: " + err);
+    console.error(err);
   }
   document.getElementById("loader").style.display = "none";
 }
