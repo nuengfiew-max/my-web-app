@@ -3,80 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice Dashboard - Financial Tracking</title>
+  <title>Invoice Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root { --sidebar-width: 280px; }
     body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    #sidebar {
-      width: var(--sidebar-width);
-      position: fixed;
-      height: 100vh;
-      background: #2c3e50;
-      color: white;
-      padding: 20px;
-      z-index: 1000;
-    }
+    #sidebar { width: var(--sidebar-width); position: fixed; height: 100vh; background: #2c3e50; color: white; padding: 20px; z-index: 1000; }
     #main-content { margin-left: var(--sidebar-width); padding: 30px; }
-    .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: 0.3s; }
-    .card:hover { transform: translateY(-5px); }
-    .loading-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(255,255,255,0.9); display: flex; flex-direction: column; 
-      justify-content: center; align-items: center; z-index: 2000;
-    }
-    .status-badge { font-weight: 500; padding: 0.5em 1em; border-radius: 30px; }
-    .text-amount { font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
+    .text-amount { font-family: 'monospace'; font-weight: bold; font-size: 1.1em; }
   </style>
 </head>
 <body>
 
   <div id="loader" class="loading-overlay">
-    <div class="spinner-border text-primary" role="status"></div>
-    <span class="mt-2 fw-bold">กำลังดึงข้อมูลบัญชี...</span>
+    <div class="spinner-border text-primary"></div>
+    <span class="mt-2 fw-bold">กำลังเชื่อมต่อข้อมูลจาก Google Sheets...</span>
   </div>
 
   <div id="sidebar">
-    <h4 class="mb-4">📊 Invoice Menu</h4>
+    <h4 class="mb-4 text-center">📊 Invoice System</h4>
     <div class="mb-3">
-      <label class="form-label text-light opacity-75">ชื่อลูกค้า</label>
+      <label class="form-label opacity-75">ชื่อลูกค้า</label>
       <select id="nameFilter" class="form-select" onchange="processData()"></select>
     </div>
     <div class="mb-3">
-      <label class="form-label text-light opacity-75">สถานะ</label>
-      <select id="statusFilter" class="form-select" onchange="processData()"></select>
+      <label class="form-label opacity-75">สถานะชำระเงิน</label>
+      <select id="statusFilter" class="form-select" onchange="processData()">
+        <option value="">ทั้งหมด</option>
+        <option value="Y">ชำระแล้ว (Y)</option>
+        <option value="N">ค้างชำระ (N/ว่าง)</option>
+      </select>
     </div>
     <div class="mb-3">
-      <label class="form-label text-light opacity-75">เดือนที่ออกบิล</label>
+      <label class="form-label opacity-75">เดือนที่ออกบิล</label>
       <select id="dateFilter" class="form-select" onchange="processData()"></select>
     </div>
-    <hr class="my-4">
-    <button class="btn btn-outline-light w-100 mb-2" onclick="loadData()">🔄 Refresh Data</button>
-    <button class="btn btn-danger w-100" onclick="exportPDF()">📄 Export to PDF</button>
+    <hr>
+    <button class="btn btn-primary w-100 mb-2" onclick="loadData()">🔄 ดึงข้อมูลใหม่</button>
+    <button class="btn btn-danger w-100" onclick="exportPDF()">📄 ออกรายงาน PDF</button>
   </div>
 
   <div id="main-content">
     <div id="report-area">
-      <h2 class="mb-4 fw-bold">Dashboard รายงานการชำระเงิน</h2>
+      <h3 class="mb-4 fw-bold text-dark">สรุปยอดบัญชีลูกหนี้</h3>
       
       <div class="row mb-4">
         <div class="col-md-4">
           <div class="card p-4 text-center bg-primary text-white">
-            <h6 class="text-uppercase opacity-75">จำนวนเงินทั้งหมด</h6>
-            <h2 id="countTotal" class="display-6 fw-bold">0.00</h2>
+            <h6 class="opacity-75">จำนวนเงินทั้งหมด</h6>
+            <h2 id="countTotal" class="fw-bold">0.00</h2>
           </div>
         </div>
         <div class="col-md-4">
           <div class="card p-4 text-center bg-success text-white">
-            <h6 class="text-uppercase opacity-75">รับชำระทั้งสิ้น (Y)</h6>
-            <h2 id="countDone" class="display-6 fw-bold">0.00</h2>
+            <h6 class="opacity-75">รับชำระทั้งสิ้น</h6>
+            <h2 id="countDone" class="fw-bold">0.00</h2>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card p-4 text-center bg-danger text-white">
-            <h6 class="text-uppercase opacity-75">ค้างชำระทั้งสิ้น</h6>
-            <h2 id="countPending" class="display-6 fw-bold">0.00</h2>
+          <div class="card p-4 text-center bg-warning text-dark">
+            <h6 class="opacity-75">ค้างชำระทั้งสิ้น</h6>
+            <h2 id="countPending" class="fw-bold">0.00</h2>
           </div>
         </div>
       </div>
@@ -101,6 +91,7 @@
   </div>
 
   <script>
+    // URL Web App ล่าสุดของคุณ (Version 9)
     const API_URL = "https://script.google.com/macros/s/AKfycbwkvlcIiKPoWNOFPUugxiEOOwzMM7K2UFeNRzKFd91e-Y5FA41vZCeX8xQZJ2NHJ_kTJQ/exec";
 
     let rawData = [];
@@ -109,32 +100,31 @@
       document.getElementById('loader').style.display = 'flex';
       try {
         const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
+        
         if (data.error) throw new Error(data.error);
         
-        rawData = data.rows;
+        // กรองแถวที่ไม่มีข้อมูลออกไป (ป้องกันแถวว่าง)
+        rawData = data.rows.filter(r => r[1] && r[1] !== "");
+        
         setupFilters(rawData);
         processData();
       } catch (error) {
-        console.error(error);
-        alert("⚠️ เกิดข้อผิดพลาดในการดึงข้อมูล");
+        console.error('Fetch error:', error);
+        alert("⚠️ ดึงข้อมูลไม่สำเร็จ: " + error.message);
       } finally {
         document.getElementById('loader').style.display = 'none';
       }
     }
 
     function setupFilters(rows) {
-      const names = [...new Set(rows.map(r => r[1]))].filter(Boolean).sort(); // ชื่อลูกค้า
-      const statuses = [...new Set(rows.map(r => r[10]))].filter(Boolean).sort(); // สถานะ Y/N
-      const months = [...new Set(rows.map(r => r[0]))].filter(Boolean).sort(); // เดือน Jan-2568
+      const names = [...new Set(rows.map(r => r[1]))].sort(); 
+      const months = [...new Set(rows.map(r => r[0]))].sort();
       
       let nameHtml = '<option value="">-- ลูกค้าทั้งหมด --</option>';
       names.forEach(n => nameHtml += `<option value="${n}">${n}</option>`);
       document.getElementById('nameFilter').innerHTML = nameHtml;
-
-      let statusHtml = '<option value="">-- สถานะทั้งหมด --</option>';
-      statuses.forEach(s => statusHtml += `<option value="${s}">${s === 'Y' ? 'ชำระแล้ว (Y)' : 'ค้างชำระ ('+s+')'}</option>`);
-      document.getElementById('statusFilter').innerHTML = statusHtml;
 
       let monthHtml = '<option value="">-- เดือนทั้งหมด --</option>';
       months.forEach(m => monthHtml += `<option value="${m}">${m}</option>`);
@@ -148,48 +138,45 @@
 
       const filtered = rawData.filter(r => {
         const matchName = !nameVal || r[1] === nameVal;
-        const matchStatus = !statusVal || r[10] === statusVal;
         const matchDate = !dateVal || r[0] === dateVal;
-        return matchName && matchStatus && matchDate;
+        
+        // ปรับการเช็คสถานะ Y/N (คอลัมน์ K คือ Index 10)
+        let matchStatus = true;
+        if (statusVal === 'Y') matchStatus = (r[10] === 'Y');
+        else if (statusVal === 'N') matchStatus = (r[10] !== 'Y');
+        
+        return matchName && matchDate && matchStatus;
       });
 
       renderTable(filtered);
       updateSummary(filtered);
     }
 
-    function parseAmount(val) {
-      if (!val) return 0;
-      // ลบ comma และแปลงเป็นตัวเลข
+    function parseNum(val) {
       return parseFloat(String(val).replace(/,/g, '')) || 0;
     }
 
     function renderTable(data) {
       let html = '';
       data.forEach(r => {
-        const amount = parseAmount(r[7]);
-        const isPaid = r[10] === 'Y';
-        const badgeClass = isPaid ? 'bg-success' : 'bg-danger';
-        const statusText = isPaid ? 'ชำระแล้ว' : 'ค้างชำระ';
+        const total = parseNum(r[7]); // คอลัมน์ H
+        const status = r[10] === 'Y' ? 'ชำระแล้ว' : 'ค้างชำระ';
+        const badge = r[10] === 'Y' ? 'bg-success' : 'bg-danger';
 
         html += `<tr>
-          <td class="fw-bold text-primary">${r[2] || '-'}</td>
+          <td class="fw-bold">${r[2] || '-'}</td>
           <td>${r[1] || '-'}</td>
           <td>${r[3] || '-'}</td>
-          <td class="text-end text-amount">${amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-          <td class="text-center"><span class="badge status-badge ${badgeClass}">${statusText}</span></td>
+          <td class="text-end text-amount">${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          <td class="text-center"><span class="badge ${badge}">${status}</span></td>
         </tr>`;
       });
-      document.getElementById('tableBody').innerHTML = html || '<tr><td colspan="5" class="text-center">ไม่พบข้อมูล</td></tr>';
+      document.getElementById('tableBody').innerHTML = html || '<tr><td colspan="5" class="text-center text-muted">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>';
     }
 
     function updateSummary(data) {
-      // 1. จำนวนเงินทั้งหมด = SUM(รวมทั้งสิ้น)
-      const total = data.reduce((sum, r) => sum + parseAmount(r[7]), 0);
-      
-      // 2. รับชำระทั้งสิ้น = SUMIFS(รวมทั้งสิ้น, "Y")
-      const paid = data.filter(r => r[10] === 'Y').reduce((sum, r) => sum + parseAmount(r[7]), 0);
-      
-      // 3. ค้างชำระทั้งสิ้น = (จำนวนเงิน - รับชำระทั้งสิ้น)
+      const total = data.reduce((sum, r) => sum + parseNum(r[7]), 0);
+      const paid = data.filter(r => r[10] === 'Y').reduce((sum, r) => sum + parseNum(r[7]), 0);
       const pending = total - paid;
 
       document.getElementById('countTotal').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
@@ -199,14 +186,11 @@
 
     function exportPDF() {
       const element = document.getElementById('report-area');
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: 'Invoice-Report.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+      html2pdf().from(element).set({
+        margin: 10,
+        filename: 'Invoice-Dashboard.pdf',
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-      };
-      html2pdf().set(opt).from(element).save();
+      }).save();
     }
 
     window.onload = loadData;
