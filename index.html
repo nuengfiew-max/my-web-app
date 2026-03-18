@@ -3,96 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice Dashboard | ระบบสรุปยอดลูกหนี้</title>
-
+    <title>Invoice Dashboard v2.0</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
     <style>
         :root { --sidebar-width: 280px; }
-        body { font-family: 'Chakra Petch', 'Segoe UI', sans-serif; background: #f4f7f6; }
-        #sidebar { width: var(--sidebar-width); position: fixed; height: 100vh; background: #2c3e50; color: white; padding: 20px; z-index: 1000; overflow-y: auto; }
-        #main-content { margin-left: var(--sidebar-width); padding: 30px; }
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: 0.3s; }
-        .card:hover { transform: translateY(-5px); }
-        .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:2000; }
-        .text-amount { font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.1em; }
-        .table-responsive { border-radius: 12px; overflow: hidden; }
-        
-        @media (max-width: 768px) {
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #1c1e21; }
+        #sidebar { width: var(--sidebar-width); position: fixed; height: 100vh; background: #1a202c; color: white; padding: 25px; z-index: 1000; }
+        #main-content { margin-left: var(--sidebar-width); padding: 40px; position: relative; }
+        .chart-box { 
+            position: absolute; top: 40px; right: 40px; 
+            width: 160px; height: 160px; background: white; 
+            padding: 15px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+        .card { border: none; border-radius: 15px; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .card:hover { transform: translateY(-3px); }
+        .bg-grad-1 { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; }
+        .bg-grad-2 { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .bg-grad-3 { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .table { background: white; border-radius: 15px; overflow: hidden; }
+        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        @media (max-width: 992px) {
             #sidebar { width: 100%; height: auto; position: relative; }
             #main-content { margin-left: 0; }
+            .chart-box { position: relative; top: 0; right: 0; margin: 0 auto 20px; }
         }
     </style>
 </head>
 <body>
 
 <div id="loader" class="loading-overlay">
-    <div class="spinner-border text-primary" role="status"></div>
-    <span class="mt-2 fw-bold">กำลังเชื่อมต่อฐานข้อมูล...</span>
+    <div class="spinner-border text-primary"></div>
+    <div class="mt-2 fw-bold">กำลังซิงค์ข้อมูลจาก Google Sheets...</div>
 </div>
 
 <div id="sidebar">
-    <h4 class="mb-4 text-center">📊 Invoice System</h4>
-    
+    <h4 class="mb-4 fw-bold">Invoice Manager</h4>
     <div class="mb-3">
-        <label class="form-label">🔍 ค้นหาลูกค้า</label>
-        <select id="nameFilter" class="form-select" onchange="processData()"></select>
+        <label class="small opacity-75 mb-1">ค้นหาชื่อลูกค้า</label>
+        <select id="nameFilter" class="form-select bg-dark text-white border-0" onchange="processData()"></select>
     </div>
-
     <div class="mb-3">
-        <label class="form-label">📌 สถานะการชำระ</label>
-        <select id="statusFilter" class="form-select" onchange="processData()">
+        <label class="small opacity-75 mb-1">กรองตามเดือน</label>
+        <select id="monthFilter" class="form-select bg-dark text-white border-0" onchange="processData()"></select>
+    </div>
+    <div class="mb-3">
+        <label class="small opacity-75 mb-1">สถานะ</label>
+        <select id="statusFilter" class="form-select bg-dark text-white border-0" onchange="processData()">
             <option value="">ทั้งหมด</option>
             <option value="Y">ชำระแล้ว</option>
             <option value="N">ค้างชำระ</option>
         </select>
     </div>
-
-    <div class="mb-3">
-        <label class="form-label">📅 เลือกเดือน</label>
-        <select id="monthFilter" class="form-select" onchange="processData()"></select>
-    </div>
-
-    <hr>
-    <button class="btn btn-outline-light w-100 mb-2" onclick="loadData()">🔄 ดึงข้อมูลใหม่</button>
-    <button class="btn btn-danger w-100" onclick="exportPDF()">📄 ออกรายงาน PDF</button>
+    <hr class="opacity-25">
+    <button class="btn btn-primary w-100 mb-2" onclick="loadData()">🔄 รีเฟรชข้อมูล</button>
+    <button class="btn btn-outline-light w-100" onclick="exportPDF()">📄 ออกรายงาน PDF</button>
 </div>
 
 <div id="main-content">
     <div id="report-area">
-        <h3 class="mb-4 fw-bold text-dark">สรุปยอดลูกหนี้รายลูกค้า</h3>
+        <div class="chart-box"><canvas id="miniChart"></canvas></div>
+        
+        <h2 class="fw-bold">Financial Summary</h2>
+        <p class="text-muted mb-4">รายงานสรุปสถานะลูกหนี้รายวัน</p>
 
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card p-4 text-center bg-primary text-white">
-                    <h6 class="opacity-75">ยอดรวมทั้งหมด</h6>
-                    <h2 id="countTotal" class="mb-0">0</h2>
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="card p-4 bg-grad-1">
+                    <div class="small opacity-75">ยอดรวมทั้งหมด</div>
+                    <h3 id="countTotal" class="mb-0 fw-bold">0</h3>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card p-4 text-center bg-success text-white">
-                    <h6 class="opacity-75">ชำระแล้ว (Y)</h6>
-                    <h2 id="countPaid" class="mb-0">0</h2>
+            <div class="col-md-3">
+                <div class="card p-4 bg-grad-2">
+                    <div class="small opacity-75">ชำระแล้ว</div>
+                    <h3 id="countPaid" class="mb-0 fw-bold">0</h3>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card p-4 text-center bg-warning text-dark">
-                    <h6 class="opacity-75">ค้างชำระ</h6>
-                    <h2 id="countPending" class="mb-0">0</h2>
+            <div class="col-md-3">
+                <div class="card p-4 bg-grad-3">
+                    <div class="small opacity-75">ค้างชำระ</div>
+                    <h3 id="countPending" class="mb-0 fw-bold">0</h3>
                 </div>
             </div>
         </div>
 
-        <div class="card p-0 overflow-hidden">
+        <div class="card p-0 shadow-sm overflow-hidden">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-dark">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <th>เลขที่ Invoice</th>
-                            <th>ชื่อลูกค้า</th>
-                            <th>วันที่</th>
-                            <th class="text-end">ยอดรวมทั้งสิ้น</th>
+                            <th class="ps-4">INV No.</th>
+                            <th>รายละเอียดลูกค้า</th>
+                            <th>วันที่ออก</th>
+                            <th class="text-end">ยอดสุทธิ</th>
                             <th class="text-center">สถานะ</th>
                         </tr>
                     </thead>
@@ -104,127 +109,107 @@
 </div>
 
 <script>
-    /** * สำคัญ: เปลี่ยน URL ด้านล่างนี้เป็น URL ที่ได้จาก Google Apps Script (Deploy > Web App)
-     */
     const API_URL = "https://script.google.com/macros/s/AKfycbwXwzG4ZHjJbkx8PI845avK8aQOMOMT-63WPnWmOY9koXy2nqWOjr7JfnnbZ-OPo5c/exec";
-
     let rawData = [];
+    let myChart = null;
 
-    // 1. ฟังก์ชันโหลดข้อมูลจาก API
     async function loadData() {
-        const loader = document.getElementById("loader");
-        loader.style.display = "flex";
-        
+        document.getElementById("loader").style.display = "flex";
         try {
-            const response = await fetch(API_URL);
-            if (!response.ok) throw new Error("Network response was not ok");
-            
-            const data = await response.json();
-            
-            // กรองแถวที่ไม่มีชื่อลูกค้าทิ้งไป
-            rawData = data.filter(item => item["ชื่อลูกค้า"] && item["ชื่อลูกค้า"].toString().trim() !== "");
-
+            const res = await fetch(API_URL);
+            rawData = await res.json();
             setupFilters();
             processData();
-        } catch (error) {
-            console.error("Error:", error);
-            alert("ไม่สามารถดึงข้อมูลได้: " + error.message + "\nกรุณาเช็คการ Deploy Web App และสิทธิ์การเข้าถึง (Anyone)");
-        } finally {
-            loader.style.display = "none";
-        }
+        } catch(err) { console.error(err); alert("Failed to fetch data!"); }
+        document.getElementById("loader").style.display = "none";
     }
 
-    // 2. ตั้งค่าตัวเลือกใน Dropdown (Unique Values)
     function setupFilters() {
         const names = [...new Set(rawData.map(r => r["ชื่อลูกค้า"]))].sort();
-        const months = [...new Set(rawData.map(r => r["เดือน"]))].sort();
+        // จัดการเรื่องเดือน (แสดงผลสวยๆ)
+        const months = [...new Set(rawData.map(r => r["เดือน"]))].sort().reverse();
 
         document.getElementById("nameFilter").innerHTML = '<option value="">ทั้งหมด</option>' + 
-            names.map(n => `<option value="${n}">${n}</option>`).join('');
-            
+            names.map(n => `<option>${n}</option>`).join('');
         document.getElementById("monthFilter").innerHTML = '<option value="">ทั้งหมด</option>' + 
-            months.map(m => `<option value="${m}">${m}</option>`).join('');
+            months.map(m => `<option>${m}</option>`).join('');
     }
 
-    // 3. กรองข้อมูลตามที่เลือก
     function processData() {
-        const nameVal = document.getElementById("nameFilter").value;
-        const statusVal = document.getElementById("statusFilter").value;
-        const monthVal = document.getElementById("monthFilter").value;
+        const name = document.getElementById("nameFilter").value;
+        const month = document.getElementById("monthFilter").value;
+        const status = document.getElementById("statusFilter").value;
 
-        const filtered = rawData.filter(item => {
-            const matchName = !nameVal || item["ชื่อลูกค้า"] === nameVal;
-            const matchMonth = !monthVal || item["เดือน"] === monthVal;
-            let matchStatus = true;
-            if (statusVal === "Y") matchStatus = item["สถานะ"] === "Y";
-            if (statusVal === "N") matchStatus = item["สถานะ"] !== "Y";
-            
-            return matchName && matchMonth && matchStatus;
+        const filtered = rawData.filter(r => {
+            const mName = !name || r["ชื่อลูกค้า"] === name;
+            const mMonth = !month || r["เดือน"] === month;
+            let mStatus = true;
+            if(status==="Y") mStatus = r["สถานะ"]==="Y";
+            if(status==="N") mStatus = r["สถานะ"]!=="Y";
+            return mName && mMonth && mStatus;
         });
 
         renderTable(filtered);
         updateSummary(filtered);
     }
 
-    // 4. แปลงค่าเงินจาก String/Number ให้เป็นตัวเลขเพื่อคำนวณ
-    function parseNum(val) {
-        if (!val) return 0;
-        return parseFloat(val.toString().replace(/,/g, "")) || 0;
-    }
+    function parseNum(v) { return parseFloat(String(v).replace(/,/g,""))||0; }
 
-    // 5. แสดงผลตาราง
     function renderTable(data) {
-        const tbody = document.getElementById("tableBody");
         let html = "";
-        
-        data.forEach(item => {
-            const total = parseNum(item["รวมทั้งสิ้น"]);
-            const isPaid = item["สถานะ"] === "Y";
-            
-            html += `
-                <tr>
-                    <td class="fw-bold text-secondary">${item["INVOICE"] || "-"}</td>
-                    <td>${item["ชื่อลูกค้า"]}</td>
-                    <td>${item["วันที่"] || "-"}</td>
-                    <td class="text-end text-amount text-primary">${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    <td class="text-center">
-                        <span class="badge ${isPaid ? "bg-success" : "bg-danger"} rounded-pill px-3">
-                            ${isPaid ? "ชำระแล้ว" : "ค้างชำระ"}
-                        </span>
-                    </td>
-                </tr>`;
+        data.forEach(r => {
+            const total = parseNum(r["รวมทั้งสิ้น"]);
+            const isPaid = r["สถานะ"]==="Y";
+            html += `<tr>
+                <td class="ps-4 fw-bold text-primary">${r["INVOICE"]||"-"}</td>
+                <td><div>${r["ชื่อลูกค้า"]}</div><small class="text-muted">${r["เดือน"]}</small></td>
+                <td>${r["วันที่"]}</td>
+                <td class="text-end fw-bold">${total.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                <td class="text-center"><span class="badge ${isPaid?"bg-success":"bg-warning text-dark"} rounded-pill">${isPaid?"ชำระแล้ว":"ค้างชำระ"}</span></td>
+            </tr>`;
         });
-        
-        tbody.innerHTML = html || '<tr><td colspan="5" class="text-center py-4 text-muted">ไม่พบข้อมูลที่ค้นหา</td></tr>';
+        document.getElementById("tableBody").innerHTML = html || '<tr><td colspan="5" class="text-center py-5">ไม่มีข้อมูลที่ตรงตามเงื่อนไข</td></tr>';
     }
 
-    // 6. อัปเดตตัวเลขใน Dashboard
     function updateSummary(data) {
-        const total = data.reduce((sum, item) => sum + parseNum(item["รวมทั้งสิ้น"]), 0);
-        const paid = data.filter(item => item["สถานะ"] === "Y").reduce((sum, item) => sum + parseNum(item["รวมทั้งสิ้น"]), 0);
+        const total = data.reduce((s,r)=>s+parseNum(r["รวมทั้งสิ้น"]),0);
+        const paid = data.filter(r=>r["สถานะ"]==="Y").reduce((s,r)=>s+parseNum(r["รวมทั้งสิ้น"]),0);
         const pending = total - paid;
 
-        document.getElementById("countTotal").innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
-        document.getElementById("countPaid").innerText = paid.toLocaleString(undefined, {minimumFractionDigits: 2});
-        document.getElementById("countPending").innerText = pending.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById("countTotal").innerText = total.toLocaleString();
+        document.getElementById("countPaid").innerText = paid.toLocaleString();
+        document.getElementById("countPending").innerText = pending.toLocaleString();
+
+        updateChart(paid, pending);
     }
 
-    // 7. ฟังก์ชันออกรายงาน PDF
+    function updateChart(paid, pending) {
+        const ctx = document.getElementById('miniChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        if (paid === 0 && pending === 0) return; // ไม่วาดถ้าไม่มีข้อมูล
+
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [paid, pending],
+                    backgroundColor: ['#10b981', '#f59e0b'],
+                    borderWidth: 0
+                }]
+            },
+            options: { cutout: '75%', plugins: { legend: { display: false } } }
+        });
+    }
+
     function exportPDF() {
         const element = document.getElementById("report-area");
-        const opt = {
-            margin:       10,
-            filename:     'Invoice_Report.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
-        html2pdf().set(opt).from(element).save();
+        html2pdf().from(element).set({
+            margin: 10, filename: 'Report.pdf',
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        }).save();
     }
 
-    // เริ่มต้นโหลดข้อมูลเมื่อเปิดหน้าเว็บ
     window.onload = loadData;
 </script>
-
 </body>
 </html>
